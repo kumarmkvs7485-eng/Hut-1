@@ -1,3 +1,46 @@
+import os
+import asyncio
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from telegram.ext import Application, CommandHandler
+
+# --- 1. THE HEARTBEAT (Keep Koyeb Happy) ---
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Hut-1 Bot is Alive!")
+
+def run_health_server():
+    # This listens on port 8000 to satisfy Koyeb's health check
+    server = HTTPServer(('0.0.0.0', 8000), HealthCheckHandler)
+    print("✅ Health check server started on port 8000")
+    server.serve_forever()
+
+# --- 2. YOUR BOT CONFIG ---
+TOKEN = os.getenv("BOT_TOKEN")
+
+async def start(update, context):
+    await update.message.reply_text("🚀 Hut-1 is Online 24/7 on the Cloud!")
+
+def main():
+    # Start the heartbeat in a separate background thread
+    threading.Thread(target=run_health_server, daemon=True).start()
+    
+    # Start the Telegram Bot
+    if not TOKEN:
+        print("❌ ERROR: BOT_TOKEN variable is missing!")
+        return
+
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    
+    print("🚀 Bot is starting...")
+    app.run_polling()
+
+if __name__ == '__main__':
+    main()
+
 import sqlite3
 import qrcode
 import io
